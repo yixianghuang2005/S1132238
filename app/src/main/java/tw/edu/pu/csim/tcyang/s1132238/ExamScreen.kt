@@ -1,5 +1,6 @@
 package tw.edu.pu.csim.tcyang.s1132238
 
+import android.graphics.Rect
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -56,6 +57,27 @@ fun ExamScreen(viewModel: ExamViewModel = viewModel()) {
 
     var serviceX by remember { mutableStateOf(width / 2) }
     var serviceY by remember { mutableStateOf(0f) }
+    var message by remember { mutableStateOf("") }
+
+
+    val role0Rect = Rect(0, (height / 2).toInt() - 300, 300, (height / 2).toInt())
+
+    // 2. 兒童 (右邊, 螢幕中間上方)
+    val role1Rect = Rect((width - 300).toInt(), (height / 2).toInt() - 300, width.toInt(), (height / 2).toInt())
+
+    // 3. 成人 (左邊, 螢幕底部)
+    val role2Rect = Rect(0, height.toInt() - 300, 300, height.toInt())
+
+    // 4. 一般民眾 (右邊, 螢幕底部)
+    val role3Rect = Rect((width - 300).toInt(), height.toInt() - 300, width.toInt(), height.toInt())
+
+
+    fun resetService(msg: String) {
+        message = msg
+        serviceY = 0f
+        serviceX = width / 2
+        currentService = services.random()
+    }
 
     LaunchedEffect(Unit) {
 
@@ -65,11 +87,28 @@ fun ExamScreen(viewModel: ExamViewModel = viewModel()) {
             delay(100)
             serviceY += 20
 
+            val serviceRect = Rect(
+                (serviceX - 150).toInt(),
+                serviceY.toInt(),
+                (serviceX + 150).toInt(),
+                (serviceY + 300).toInt()
+            )
 
-            if (serviceY > height) {
-                serviceY = 0f
-                serviceX = width / 2
-                currentService = services.random()
+
+            if (Rect.intersects(serviceRect, role0Rect)) {
+                resetService("(碰撞嬰幼兒圖示)")
+            }
+            else if (Rect.intersects(serviceRect, role1Rect)) {
+                resetService("(碰撞兒童圖示)")
+            }
+            else if (Rect.intersects(serviceRect, role2Rect)) {
+                resetService("(碰撞成人圖示)")
+            }
+            else if (Rect.intersects(serviceRect, role3Rect)) {
+                resetService("(碰撞一般民眾圖示)")
+            }
+            else if (serviceY > height) {
+                resetService("(掉到最下方)")
             }
         }
     }
@@ -120,62 +159,37 @@ fun ExamScreen(viewModel: ExamViewModel = viewModel()) {
 
 
             Text(
-                text = "成績 : ${viewModel.score}分",
-                fontSize = 18.sp
+                text = "成績 : ${viewModel.score}分 $message",
+                fontSize = 18.sp,
+                color = Color.Black
             )
         }
 
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) {
-
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                 Image(
                     painter = painterResource(id = R.drawable.role0),
                     contentDescription = "嬰兒",
-                    modifier = Modifier
-                        .size(imageSizeDp)
-                        .align(Alignment.BottomStart)
+                    modifier = Modifier.size(imageSizeDp).align(Alignment.BottomStart)
                 )
-
                 Image(
                     painter = painterResource(id = R.drawable.role1),
                     contentDescription = "兒童",
-                    modifier = Modifier
-                        .size(imageSizeDp)
-                        .align(Alignment.BottomEnd)
+                    modifier = Modifier.size(imageSizeDp).align(Alignment.BottomEnd)
                 )
             }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f) // 分配權重 1
-            ) {
-
+            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                 Image(
                     painter = painterResource(id = R.drawable.role2),
                     contentDescription = "成人",
-                    modifier = Modifier
-                        .size(imageSizeDp)
-                        .align(Alignment.BottomStart)
+                    modifier = Modifier.size(imageSizeDp).align(Alignment.BottomStart)
                 )
-
                 Image(
                     painter = painterResource(id = R.drawable.role3),
                     contentDescription = "一般民眾",
-                    modifier = Modifier
-                        .size(imageSizeDp)
-                        .align(Alignment.BottomEnd)
+                    modifier = Modifier.size(imageSizeDp).align(Alignment.BottomEnd)
                 )
             }
-
-
         }
 
         Image(
@@ -183,11 +197,7 @@ fun ExamScreen(viewModel: ExamViewModel = viewModel()) {
             contentDescription = "Service Icon",
             modifier = Modifier
                 .size(imageSizeDp)
-
                 .offset { IntOffset(serviceX.toInt() - 150, serviceY.toInt()) }
-
-
-
                 .pointerInput(Unit) {
                     detectDragGestures { change, dragAmount ->
                         change.consume()
