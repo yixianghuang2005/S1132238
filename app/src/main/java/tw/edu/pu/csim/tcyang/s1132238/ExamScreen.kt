@@ -1,6 +1,7 @@
 package tw.edu.pu.csim.tcyang.s1132238
 
 import android.graphics.Rect
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -54,21 +55,14 @@ fun ExamScreen(viewModel: ExamViewModel = viewModel()) {
     )
 
     var currentService by remember { mutableStateOf(services.random()) }
-
     var serviceX by remember { mutableStateOf(width / 2) }
     var serviceY by remember { mutableStateOf(0f) }
     var message by remember { mutableStateOf("") }
 
 
     val role0Rect = Rect(0, (height / 2).toInt() - 300, 300, (height / 2).toInt())
-
-    // 2. 兒童 (右邊, 螢幕中間上方)
     val role1Rect = Rect((width - 300).toInt(), (height / 2).toInt() - 300, width.toInt(), (height / 2).toInt())
-
-    // 3. 成人 (左邊, 螢幕底部)
     val role2Rect = Rect(0, height.toInt() - 300, 300, height.toInt())
-
-    // 4. 一般民眾 (右邊, 螢幕底部)
     val role3Rect = Rect((width - 300).toInt(), height.toInt() - 300, width.toInt(), height.toInt())
 
 
@@ -94,21 +88,68 @@ fun ExamScreen(viewModel: ExamViewModel = viewModel()) {
                 (serviceY + 300).toInt()
             )
 
+            var hitRoleIndex: Int? = null
+            var hitRoleName = ""
 
             if (Rect.intersects(serviceRect, role0Rect)) {
-                resetService("(碰撞嬰幼兒圖示)")
+                hitRoleIndex = 0
+                hitRoleName = "嬰幼兒"
+            } else if (Rect.intersects(serviceRect, role1Rect)) {
+                hitRoleIndex = 1
+                hitRoleName = "兒童"
+            } else if (Rect.intersects(serviceRect, role2Rect)) {
+                hitRoleIndex = 2
+                hitRoleName = "成人"
+            } else if (Rect.intersects(serviceRect, role3Rect)) {
+                hitRoleIndex = 3
+                hitRoleName = "一般民眾"
             }
-            else if (Rect.intersects(serviceRect, role1Rect)) {
-                resetService("(碰撞兒童圖示)")
+
+
+            if (hitRoleIndex != null) {
+
+                message = "(碰撞${hitRoleName}圖示)"
+
+
+                val currentServiceIndex = services.indexOf(currentService)
+                if (currentServiceIndex == hitRoleIndex) {
+                    viewModel.score += 1 // 答對加分
+                } else {
+                    viewModel.score -= 1 // 答錯扣分
+                }
+
+
+                val answerText = when (currentServiceIndex) {
+                    0 -> "極早期療育，屬於嬰幼兒方面的服務"
+                    1 -> "離島服務，屬於兒童方面的服務"
+                    2 -> "極重多障，屬於成人方面的服務"
+                    3 -> "輔具服務，屬於一般民眾方面的服務"
+                    else -> ""
+                }
+
+
+                Toast.makeText(context, answerText, Toast.LENGTH_LONG).show()
+
+
+                delay(3000)
+
+
+                serviceY = 0f
+                serviceX = width / 2
+                currentService = services.random()
+                message = ""
             }
-            else if (Rect.intersects(serviceRect, role2Rect)) {
-                resetService("(碰撞成人圖示)")
-            }
-            else if (Rect.intersects(serviceRect, role3Rect)) {
-                resetService("(碰撞一般民眾圖示)")
-            }
-            else if (serviceY > height) {
-                resetService("(掉到最下方)")
+
+            else if (serviceY + 300 >= height) {
+                serviceY = height - 300
+                message = "(掉到最下方)"
+                viewModel.score -= 1
+
+                delay(1000)
+                serviceY = 0f
+                serviceX = width / 2
+                currentService = services.random()
+                message = ""
             }
         }
     }
